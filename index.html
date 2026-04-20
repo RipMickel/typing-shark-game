@@ -35,7 +35,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.9);
+      background: rgba(0,0,0,0.92);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -70,18 +70,18 @@
 
 <div id="hud">
   <div>Score: <span id="score">0</span></div>
-  <div>Health: <span id="health">3</span></div>
+  <div>Health: <span id="health">0</span></div>
   <div>Combo: <span id="combo">0</span></div>
-  <div>Level: <span id="level">Easy</span></div>
+  <div>Level: <span id="level">-</span></div>
 </div>
 
 <canvas id="game" width="900" height="450"></canvas>
 
-<input id="typebox" placeholder="type shark word..." autofocus />
+<input id="typebox" placeholder="type shark word..." disabled />
 
 <!-- MENU -->
 <div id="menu">
-  <h1>Choose Difficulty</h1>
+  <h1>🦈 Choose Difficulty</h1>
   <button class="easy" onclick="startGame('easy')">Easy</button>
   <button class="medium" onclick="startGame('medium')">Medium</button>
   <button class="hard" onclick="startGame('hard')">Hard</button>
@@ -99,32 +99,48 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-const sharkImg = new Image();
-sharkImg.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Great_white_shark_size.svg/512px-Great_white_shark_size.svg.png";
-
-const words = [
-  "SHARK","OCEAN","WAVE","DEEP","HUNT","BLUE",
-  "CORAL","REEF","CURRENT","TIDE","FISH","WATER",
-  "BITE","SURGE","AQUA","DEPTH"
-];
-
+// ---------- GAME STATE ----------
 let sharks = [];
 let particles = [];
 
 let score = 0;
 let health = 3;
 let combo = 0;
-let speed = 1;
+let speed = 2;
 let difficulty = "easy";
 let running = false;
 
-function settings(level) {
-  if (level === "easy") return { speed: 2, health: 5 };
-  if (level === "medium") return { speed: 3, health: 4 };
-  if (level === "hard") return { speed: 4, health: 3 };
-  if (level === "extreme") return { speed: 6, health: 2 };
+// ---------- WORDS ----------
+const words = [
+  "SHARK","OCEAN","WAVE","DEEP","HUNT","BLUE",
+  "CORAL","REEF","CURRENT","TIDE","FISH","WATER",
+  "BITE","SURGE","AQUA","DEPTH"
+];
+
+// ---------- SHARK SPRITE (NO EXTERNAL DEPENDENCY) ----------
+function drawSharkBody(x, y) {
+  // body
+  ctx.fillStyle = "#00c8ff";
+  ctx.beginPath();
+  ctx.ellipse(x, y, 35, 18, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // tail
+  ctx.beginPath();
+  ctx.moveTo(x - 35, y);
+  ctx.lineTo(x - 55, y - 10);
+  ctx.lineTo(x - 55, y + 10);
+  ctx.closePath();
+  ctx.fill();
+
+  // eye
+  ctx.fillStyle = "white";
+  ctx.beginPath();
+  ctx.arc(x + 10, y - 5, 3, 0, Math.PI * 2);
+  ctx.fill();
 }
 
+// ---------- SHARK SPAWN ----------
 function spawnShark() {
   sharks.push({
     x: 900,
@@ -134,6 +150,7 @@ function spawnShark() {
   });
 }
 
+// ---------- EXPLOSION ----------
 function explode(x, y) {
   for (let i = 0; i < 10; i++) {
     particles.push({
@@ -145,6 +162,15 @@ function explode(x, y) {
   }
 }
 
+// ---------- DIFFICULTY ----------
+function settings(level) {
+  if (level === "easy") return { speed: 2, health: 5 };
+  if (level === "medium") return { speed: 3, health: 4 };
+  if (level === "hard") return { speed: 4, health: 3 };
+  if (level === "extreme") return { speed: 6, health: 2 };
+}
+
+// ---------- INPUT ----------
 document.getElementById("typebox").addEventListener("input", e => {
   let val = e.target.value.toUpperCase();
 
@@ -169,6 +195,7 @@ document.getElementById("typebox").addEventListener("input", e => {
   }
 });
 
+// ---------- HUD ----------
 function updateHUD() {
   document.getElementById("score").innerText = score;
   document.getElementById("health").innerText = health;
@@ -176,6 +203,7 @@ function updateHUD() {
   document.getElementById("level").innerText = difficulty.toUpperCase();
 }
 
+// ---------- START GAME ----------
 function startGame(level) {
   difficulty = level;
   const set = settings(level);
@@ -183,18 +211,29 @@ function startGame(level) {
   speed = set.speed;
   health = set.health;
 
+  sharks = [];
+  particles = [];
+  score = 0;
+  combo = 0;
+
   document.getElementById("menu").style.display = "none";
-  running = true;
+  document.getElementById("typebox").disabled = false;
+  document.getElementById("typebox").focus();
 
   for (let i = 0; i < 6; i++) spawnShark();
 
+  running = true;
   loop();
+  updateHUD();
 }
 
+// ---------- UPDATE ----------
 function update() {
-  speed += 0.0005;
+  speed += 0.0004;
 
-  sharks.forEach((s, i) => {
+  // move sharks safely (no splice inside forEach bug)
+  for (let i = sharks.length - 1; i >= 0; i--) {
+    let s = sharks[i];
     s.x -= speed;
 
     if (s.x < -80) {
@@ -211,43 +250,45 @@ function update() {
         document.getElementById("gameOver").style.display = "flex";
       }
     }
-  });
+  }
 
-  particles.forEach((p, i) => {
+  // particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    let p = particles[i];
     p.x += p.vx;
     p.y += p.vy;
     p.life--;
 
     if (p.life <= 0) particles.splice(i, 1);
-  });
+  }
 }
 
-function drawShark(s) {
-  ctx.drawImage(sharkImg, s.x - 40, s.y - 25, 80, 50);
-
-  ctx.fillStyle = s.hit ? "#00ff88" : "white";
-  ctx.font = "16px Arial";
-  ctx.fillText(s.word, s.x - 30, s.y - 30);
-}
-
+// ---------- DRAW ----------
 function draw() {
   ctx.fillStyle = "#001018";
   ctx.fillRect(0, 0, 900, 450);
 
+  // particles
   particles.forEach(p => {
     ctx.fillStyle = "orange";
     ctx.fillRect(p.x, p.y, 3, 3);
   });
 
-  sharks.forEach(drawShark);
+  // sharks
+  sharks.forEach(s => {
+    drawSharkBody(s.x, s.y);
+
+    ctx.fillStyle = s.hit ? "#00ff88" : "white";
+    ctx.font = "16px Arial";
+    ctx.fillText(s.word, s.x - 30, s.y - 30);
+  });
 }
 
+// ---------- LOOP ----------
 function loop() {
   if (!running) return;
-
   update();
   draw();
-
   requestAnimationFrame(loop);
 }
 </script>
