@@ -202,10 +202,10 @@ function explode(x, y) {
 
 // ---------- SETTINGS ----------
 function settings(level) {
-  if (level === "easy") return { speed: 1.5, health: 5, rate: 8 / 600 };
-  if (level === "medium") return { speed: 2.5, health: 4, rate: 6 / 540 };
-  if (level === "hard") return { speed: 3.5, health: 3, rate: 5 / 480 };
-  if (level === "extreme") return { speed: 5, health: 2, rate: 6 / 360 };
+  if (level === "easy") return { speed: 1.5, health: 5, rate: 3 / 900 };
+  if (level === "medium") return { speed: 2.5, health: 4, rate: 6 / 800 };
+  if (level === "hard") return { speed: 3.5, health: 3, rate: 4 / 700 };
+  if (level === "extreme") return { speed: 5, health: 2, rate: 3 / 600 };
 }
 
 // ---------- LEVEL UP ----------
@@ -370,7 +370,7 @@ function drawWord(s) {
   ctx.fillStyle = "#00ff88";
   ctx.fillText(s.hit, startX, y);
 
-  ctx.fillStyle = "white";
+  ctx.fillStyle = "black";
   ctx.fillText(
     s.word.slice(s.hit.length),
     startX + ctx.measureText(s.hit).width,
