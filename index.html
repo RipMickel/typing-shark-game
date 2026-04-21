@@ -16,7 +16,7 @@
       background: linear-gradient(#003049, #001018);
       display: block;
       margin: 10px auto;
-      border: 2px solid #bbddde;
+      border: 2px solid #00f7ff;
     }
 
     input {
@@ -67,7 +67,7 @@
 </head>
 <body>
 
-<h1>🦈 Typer Shark</h1>
+<h1>🦈 Typer Shark: WayLingaw Developed by: mickel.dev</h1>
 
 <div id="hud">
   <div>Score: <span id="score">0</span></div>
@@ -78,6 +78,7 @@
 </div>
 
 <canvas id="game" width="900" height="450"></canvas>
+
 <input id="typebox" placeholder="type shark word..." disabled />
 
 <div id="menu">
@@ -116,58 +117,251 @@ let slowTimer = 0;
 let spawnAccumulator = 0;
 let sharksPerSecond = 0;
 
-const longWords = [
-  "CURRENT","CORAL","DEPTH","SURGE","OCEANIC","TIDAL","ABYSS","MARINE","VOYAGE","DRIFTING",
-  "TSUNAMI","HORIZON","SEABED","UNDERWATER","PRESSURE","WATERFLOW","BLUEWHALE","SHIPWRECK",
-  "ANCHORAGE","SUBMERGED","EXPLORATION","NAVIGATION","TURBULENCE","HYDROTHERMAL","BIOLUMINESCENCE",
-  "ECOSYSTEM","CONTINENTAL","SALTWATER","PLANKTONIC","MIGRATION","CURRENTFLOW","DEEPSEA","OXYGENATION"
-];
+const longWords = ["CURRENT","CORAL","DEPTH","SURGE","OCEANIC","TIDAL","ABYSS","MARINE","VOYAGE","DRIFTING"];
+const shortWords = ["WAVE","FISH","BLUE","DEEP","BITE","AQUA","REEF"];
 
-const shortWords = [
-  "WAVE","FISH","BLUE","DEEP","BITE","ICS","AQUA","REEF",
-  "SEA","FIN","EEL","INK","TIDE","FOAM","SURF","KELP",
-  "BASS","CLAM","CRAB","DIVE","GULF","HULL","MAKO","PEARL",
-  "SQUID","SHARK","CORAL","DRIFT","SHELL","SAND","REEF","SWIM"
-];
+// ---------- SHARK TYPES ----------
+function getSharkType() {
+  if (level < 3) return "normal";
 
-// ---------- DRAW SHARK (STRETCH) ----------
-function drawSharkBody(x, y, type, slowed=false, word="") {
+  let r = Math.random();
+
+  if (level >= 6 && r < 0.2) return "tank";
+  if (level >= 4 && r < 0.4) return "zigzag";
+  if (r < 0.7) return "fast";
+
+  return "normal";
+}
+
+// ---------- DRAW ----------
+function drawSharkBody(x, y, type, slowed=false) {
   let color = "#00c8ff";
 
   if (type === "fast") color = "#00ff88";
   if (type === "tank") color = "#ffcc00";
   if (type === "zigzag") color = "#ff66ff";
+
   if (slowed) color = "#66e0ff";
-
-  ctx.font = "bold 15px Arial";
-  let textWidth = ctx.measureText(word).width;
-
-  let baseWidth = 40;
-  let extra = Math.max(0, textWidth - 50);
-  let width = baseWidth + extra * 0.5;
 
   ctx.fillStyle = color;
 
   ctx.beginPath();
-  ctx.ellipse(x, y, width, 20, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y, 40, 20, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.beginPath();
-  ctx.moveTo(x - width, y);
-  ctx.lineTo(x - width - 25, y - 12);
-  ctx.lineTo(x - width - 25, y + 12);
+  ctx.moveTo(x - 40, y);
+  ctx.lineTo(x - 65, y - 12);
+  ctx.lineTo(x - 65, y + 12);
   ctx.closePath();
   ctx.fill();
 
   ctx.fillStyle = "white";
   ctx.beginPath();
-  ctx.arc(x + width * 0.3, y - 5, 3, 0, Math.PI * 2);
+  ctx.arc(x + 12, y - 5, 3, 0, Math.PI * 2);
   ctx.fill();
 }
 
 // ---------- WORD ----------
+function getWord(type) {
+  if (type === "fast") return shortWords[Math.floor(Math.random() * shortWords.length)];
+  if (difficulty === "easy") return longWords[Math.floor(Math.random() * longWords.length)];
+  return [...shortWords, ...longWords][Math.floor(Math.random() * (shortWords.length + longWords.length))];
+}
+
+// ---------- SPAWN ----------
+function spawnShark() {
+  let type = getSharkType();
+
+  sharks.push({
+    x: 900,
+    y: Math.random() * 380 + 30,
+    baseY: 0,
+    zigzagDir: Math.random() < 0.5 ? 1 : -1,
+    word: getWord(type),
+    hit: "",
+    push: 0,
+    type: type,
+    hp: type === "tank" ? 2 : 1
+  });
+
+  sharks[sharks.length - 1].baseY = sharks[sharks.length - 1].y;
+}
+
+// ---------- EFFECT ----------
+function explode(x, y) {
+  for (let i = 0; i < 10; i++) {
+    particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 5,
+      vy: (Math.random() - 0.5) * 5,
+      life: 30
+    });
+  }
+}
+
+// ---------- SETTINGS ----------
+function settings(level) {
+  if (level === "easy") return { speed: 1.5, health: 5, rate: 3 / 900 };
+  if (level === "medium") return { speed: 2.5, health: 4, rate: 6 / 800 };
+  if (level === "hard") return { speed: 3.5, health: 3, rate: 4 / 700 };
+  if (level === "extreme") return { speed: 5, health: 2, rate: 3 / 600 };
+}
+
+// ---------- LEVEL UP ----------
+function checkLevelUp() {
+  if (xp >= xpToNext) {
+    xp -= xpToNext;
+    level++;
+
+    speed += 0.3;
+    sharksPerSecond += 0.002;
+
+    health = Math.min(health + 1, 10);
+    xpToNext = Math.floor(xpToNext * 1.25);
+  }
+}
+
+// ---------- INPUT ----------
+document.getElementById("typebox").addEventListener("input", e => {
+  let val = e.target.value.toUpperCase();
+
+  sharks.forEach(s => s.hit = s.word.startsWith(val) ? val : "");
+
+  for (let i = 0; i < sharks.length; i++) {
+    if (sharks[i].word === val) {
+      let s = sharks[i];
+
+      s.hp--;
+
+      if (s.hp <= 0) {
+        explode(s.x, s.y);
+
+        let multiplier = 1 + Math.min(combo * 0.2, 3);
+        score += Math.floor(10 * multiplier);
+
+        combo++;
+        xp += 20 + combo * 5;
+
+        checkLevelUp();
+
+        sharks.splice(i, 1);
+      } else {
+        // Tank hit feedback
+        s.word = getWord("fast");
+        s.hit = "";
+      }
+
+      slowTimer = 40 + combo * 5;
+      s.push = 10 + combo * 1.5;
+
+      e.target.value = "";
+      updateHUD();
+      break;
+    }
+  }
+});
+
+// ---------- HUD ----------
+function updateHUD() {
+  document.getElementById("score").innerText = score;
+  document.getElementById("health").innerText = health;
+  document.getElementById("combo").innerText = combo;
+  document.getElementById("level").innerText = level;
+  document.getElementById("xp").innerText = xp;
+  document.getElementById("xpNext").innerText = xpToNext;
+}
+
+// ---------- START ----------
+function startGame(levelChoice) {
+  difficulty = levelChoice;
+  const set = settings(levelChoice);
+
+  speed = set.speed;
+  health = set.health;
+  sharksPerSecond = set.rate;
+
+  sharks = [];
+  particles = [];
+  score = 0;
+  combo = 0;
+
+  level = 1;
+  xp = 0;
+  xpToNext = 100;
+
+  slowTimer = 0;
+  spawnAccumulator = 0;
+
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("typebox").disabled = false;
+  document.getElementById("typebox").focus();
+
+  running = true;
+  loop();
+  updateHUD();
+}
+
+// ---------- UPDATE ----------
+function update() {
+  let currentSpeed = speed;
+
+  if (slowTimer > 0) {
+    currentSpeed *= 0.6;
+    slowTimer--;
+  }
+
+  spawnAccumulator += sharksPerSecond;
+
+  while (spawnAccumulator >= 1) {
+    spawnShark();
+    spawnAccumulator--;
+  }
+
+  for (let i = sharks.length - 1; i >= 0; i--) {
+    let s = sharks[i];
+
+    let moveSpeed = currentSpeed;
+
+    if (s.type === "fast") moveSpeed *= 1.8;
+
+    if (s.push > 0) {
+      s.x += s.push;
+      s.push *= 0.8;
+    }
+
+    s.x -= moveSpeed;
+
+    // 🌀 ZIGZAG
+    if (s.type === "zigzag") {
+      s.y += Math.sin(Date.now() * 0.005 + s.x * 0.05) * 2;
+    }
+
+    if (s.x < -80) {
+      sharks.splice(i, 1);
+      health--;
+      combo = 0;
+      updateHUD();
+
+      if (health <= 0) {
+        running = false;
+        document.getElementById("finalScore").innerText = "Score: " + score;
+        document.getElementById("gameOver").style.display = "flex";
+      }
+    }
+  }
+
+  particles.forEach((p, i) => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+    if (p.life <= 0) particles.splice(i, 1);
+  });
+}
+
+// ---------- DRAW ----------
 function drawWord(s) {
-  ctx.font = "bold 15px Arial";
+  ctx.font = "bold 14px Arial";
 
   const fullWidth = ctx.measureText(s.word).width;
   const startX = s.x - fullWidth / 2;
@@ -184,48 +378,22 @@ function drawWord(s) {
   );
 }
 
-// ---------- REST (UNCHANGED CORE) ----------
-function getWord(type) {
-  if (type === "fast") return shortWords[Math.floor(Math.random() * shortWords.length)];
-  if (difficulty === "easy") return longWords[Math.floor(Math.random() * longWords.length)];
-  return [...shortWords, ...longWords][Math.floor(Math.random() * (shortWords.length + longWords.length))];
-}
-
-function spawnShark() {
-  let type = "normal";
-  sharks.push({
-    x: 900,
-    y: Math.random() * 380 + 30,
-    word: getWord(type),
-    hit: "",
-    push: 0,
-    type: type,
-    hp: 1
-  });
-}
-
-function startGame() {
-  document.getElementById("menu").style.display = "none";
-  document.getElementById("typebox").disabled = false;
-  document.getElementById("typebox").focus();
-  running = true;
-  loop();
-}
-
-function update() {
-  sharks.forEach(s => s.x -= 2);
-}
-
 function draw() {
   ctx.fillStyle = "#001018";
   ctx.fillRect(0, 0, 900, 450);
 
+  particles.forEach(p => {
+    ctx.fillStyle = "orange";
+    ctx.fillRect(p.x, p.y, 3, 3);
+  });
+
   sharks.forEach(s => {
-    drawSharkBody(s.x, s.y, s.type, false, s.word); // ✅ pass word
+    drawSharkBody(s.x, s.y, s.type, slowTimer > 0);
     drawWord(s);
   });
 }
 
+// ---------- LOOP ----------
 function loop() {
   if (!running) return;
   update();
