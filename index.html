@@ -107,14 +107,18 @@ let speed = 2;
 let difficulty = "easy";
 let running = false;
 
+// NEW: slow effect timer
+let slowTimer = 0;
+
 const words = [
   "SHARK","OCEAN","WAVE","DEEP","HUNT","BLUE",
   "CORAL","REEF","CURRENT","TIDE","FISH","WATER",
   "BITE","SURGE","AQUA","DEPTH"
 ];
 
-function drawSharkBody(x, y) {
-  ctx.fillStyle = "#00c8ff";
+function drawSharkBody(x, y, slowed=false) {
+  ctx.fillStyle = slowed ? "#66e0ff" : "#00c8ff";
+
   ctx.beginPath();
   ctx.ellipse(x, y, 35, 18, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -137,7 +141,8 @@ function spawnShark() {
     x: 900,
     y: Math.random() * 380 + 30,
     word: words[Math.floor(Math.random() * words.length)],
-    hit: ""
+    hit: "",
+    push: 0 // NEW: backward force
   });
 }
 
@@ -159,6 +164,7 @@ function settings(level) {
   if (level === "extreme") return { speed: 6, health: 2 };
 }
 
+// ---------- INPUT ----------
 document.getElementById("typebox").addEventListener("input", e => {
   let val = e.target.value.toUpperCase();
 
@@ -172,12 +178,24 @@ document.getElementById("typebox").addEventListener("input", e => {
 
   for (let i = 0; i < sharks.length; i++) {
     if (sharks[i].word === val) {
-      explode(sharks[i].x, sharks[i].y);
+      let s = sharks[i];
+
+      explode(s.x, s.y);
+
+      // 🎯 COMBO MULTIPLIER
+      let multiplier = 1 + Math.min(combo * 0.2, 3); // capped
+      score += Math.floor(10 * multiplier);
+
+      combo++;
+
+      // ❄️ SLOW EFFECT (scaled by combo)
+      slowTimer = 40 + combo * 5;
+
+      // ↩️ PUSH BACK (small backward motion)
+      s.push = 10 + combo * 1.5;
+
       sharks.splice(i, 1);
       spawnShark();
-
-      score += 10 + combo;
-      combo++;
 
       e.target.value = "";
       updateHUD();
@@ -186,6 +204,7 @@ document.getElementById("typebox").addEventListener("input", e => {
   }
 });
 
+// ---------- HUD ----------
 function updateHUD() {
   document.getElementById("score").innerText = score;
   document.getElementById("health").innerText = health;
@@ -204,6 +223,7 @@ function startGame(level) {
   particles = [];
   score = 0;
   combo = 0;
+  slowTimer = 0;
 
   document.getElementById("menu").style.display = "none";
   document.getElementById("typebox").disabled = false;
@@ -216,12 +236,28 @@ function startGame(level) {
   updateHUD();
 }
 
+// ---------- UPDATE ----------
 function update() {
   speed += 0.0004;
 
+  let currentSpeed = speed;
+
+  // apply slow effect
+  if (slowTimer > 0) {
+    currentSpeed *= 0.6;
+    slowTimer--;
+  }
+
   for (let i = sharks.length - 1; i >= 0; i--) {
     let s = sharks[i];
-    s.x -= speed;
+
+    // apply pushback (smooth decay)
+    if (s.push > 0) {
+      s.x += s.push;
+      s.push *= 0.8;
+    }
+
+    s.x -= currentSpeed;
 
     if (s.x < -80) {
       sharks.splice(i, 1);
@@ -249,21 +285,21 @@ function update() {
   }
 }
 
+// ---------- DRAW WORD ----------
 function drawWord(s) {
   const x = s.x - 30;
   const y = s.y - 30;
 
   ctx.font = "16px Arial";
 
-  // typed part
   ctx.fillStyle = "#00ff88";
   ctx.fillText(s.hit, x, y);
 
-  // remaining part
   ctx.fillStyle = "white";
   ctx.fillText(s.word.slice(s.hit.length), x + ctx.measureText(s.hit).width, y);
 }
 
+// ---------- DRAW ----------
 function draw() {
   ctx.fillStyle = "#001018";
   ctx.fillRect(0, 0, 900, 450);
@@ -274,11 +310,12 @@ function draw() {
   });
 
   sharks.forEach(s => {
-    drawSharkBody(s.x, s.y);
+    drawSharkBody(s.x, s.y, slowTimer > 0);
     drawWord(s);
   });
 }
 
+// ---------- LOOP ----------
 function loop() {
   if (!running) return;
   update();
