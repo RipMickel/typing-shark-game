@@ -59,8 +59,9 @@
     #hud {
       display: flex;
       justify-content: center;
-      gap: 30px;
+      gap: 25px;
       font-size: 18px;
+      flex-wrap: wrap;
     }
   </style>
 </head>
@@ -72,7 +73,8 @@
   <div>Score: <span id="score">0</span></div>
   <div>Health: <span id="health">0</span></div>
   <div>Combo: <span id="combo">0</span></div>
-  <div>Level: <span id="level">-</span></div>
+  <div>Level: <span id="level">1</span></div>
+  <div>XP: <span id="xp">0</span>/<span id="xpNext">100</span></div>
 </div>
 
 <canvas id="game" width="900" height="450"></canvas>
@@ -107,19 +109,41 @@ let speed = 2;
 let difficulty = "easy";
 let running = false;
 
-let slowTimer = 0;
+let level = 1;
+let xp = 0;
+let xpToNext = 100;
 
-// 🆕 spawn system (per SECOND rate converted from per MINUTE design)
+let slowTimer = 0;
 let spawnAccumulator = 0;
 let sharksPerSecond = 0;
 
-// WORD POOLS
 const longWords = ["CURRENT","CORAL","DEPTH","SURGE","OCEANIC","TIDAL","ABYSS","MARINE","VOYAGE","DRIFTING"];
 const shortWords = ["WAVE","FISH","BLUE","DEEP","BITE","AQUA","REEF"];
 
-// ---------- SHARK ----------
-function drawSharkBody(x, y, slowed=false) {
-  ctx.fillStyle = slowed ? "#66e0ff" : "#00c8ff";
+// ---------- SHARK TYPES ----------
+function getSharkType() {
+  if (level < 3) return "normal";
+
+  let r = Math.random();
+
+  if (level >= 6 && r < 0.2) return "tank";
+  if (level >= 4 && r < 0.4) return "zigzag";
+  if (r < 0.7) return "fast";
+
+  return "normal";
+}
+
+// ---------- DRAW ----------
+function drawSharkBody(x, y, type, slowed=false) {
+  let color = "#00c8ff";
+
+  if (type === "fast") color = "#00ff88";
+  if (type === "tank") color = "#ffcc00";
+  if (type === "zigzag") color = "#ff66ff";
+
+  if (slowed) color = "#66e0ff";
+
+  ctx.fillStyle = color;
 
   ctx.beginPath();
   ctx.ellipse(x, y, 40, 20, 0, 0, Math.PI * 2);
@@ -139,20 +163,29 @@ function drawSharkBody(x, y, slowed=false) {
 }
 
 // ---------- WORD ----------
-function getWord() {
+function getWord(type) {
+  if (type === "fast") return shortWords[Math.floor(Math.random() * shortWords.length)];
   if (difficulty === "easy") return longWords[Math.floor(Math.random() * longWords.length)];
   return [...shortWords, ...longWords][Math.floor(Math.random() * (shortWords.length + longWords.length))];
 }
 
 // ---------- SPAWN ----------
 function spawnShark() {
+  let type = getSharkType();
+
   sharks.push({
     x: 900,
     y: Math.random() * 380 + 30,
-    word: getWord(),
+    baseY: 0,
+    zigzagDir: Math.random() < 0.5 ? 1 : -1,
+    word: getWord(type),
     hit: "",
-    push: 0
+    push: 0,
+    type: type,
+    hp: type === "tank" ? 2 : 1
   });
+
+  sharks[sharks.length - 1].baseY = sharks[sharks.length - 1].y;
 }
 
 // ---------- EFFECT ----------
@@ -167,19 +200,25 @@ function explode(x, y) {
   }
 }
 
-// ---------- SETTINGS (PER MINUTE → CONVERTED) ----------
+// ---------- SETTINGS ----------
 function settings(level) {
-  if (level === "easy") {
-    return { speed: 1.5, health: 5, rate: 8 / 600 };   // 8 per 10 min
-  }
-  if (level === "medium") {
-    return { speed: 2.5, health: 4, rate: 6 / 540 };   // 6 per 9 min
-  }
-  if (level === "hard") {
-    return { speed: 3.5, health: 3, rate: 5 / 480 };    // 5 per 8 min
-  }
-  if (level === "extreme") {
-    return { speed: 5, health: 2, rate: 6 / 360 };      // 6 per 6 min
+  if (level === "easy") return { speed: 1.5, health: 5, rate: 8 / 600 };
+  if (level === "medium") return { speed: 2.5, health: 4, rate: 6 / 540 };
+  if (level === "hard") return { speed: 3.5, health: 3, rate: 5 / 480 };
+  if (level === "extreme") return { speed: 5, health: 2, rate: 6 / 360 };
+}
+
+// ---------- LEVEL UP ----------
+function checkLevelUp() {
+  if (xp >= xpToNext) {
+    xp -= xpToNext;
+    level++;
+
+    speed += 0.3;
+    sharksPerSecond += 0.002;
+
+    health = Math.min(health + 1, 10);
+    xpToNext = Math.floor(xpToNext * 1.25);
   }
 }
 
@@ -193,17 +232,28 @@ document.getElementById("typebox").addEventListener("input", e => {
     if (sharks[i].word === val) {
       let s = sharks[i];
 
-      explode(s.x, s.y);
+      s.hp--;
 
-      let multiplier = 1 + Math.min(combo * 0.2, 3);
-      score += Math.floor(10 * multiplier);
+      if (s.hp <= 0) {
+        explode(s.x, s.y);
 
-      combo++;
+        let multiplier = 1 + Math.min(combo * 0.2, 3);
+        score += Math.floor(10 * multiplier);
+
+        combo++;
+        xp += 20 + combo * 5;
+
+        checkLevelUp();
+
+        sharks.splice(i, 1);
+      } else {
+        // Tank hit feedback
+        s.word = getWord("fast");
+        s.hit = "";
+      }
 
       slowTimer = 40 + combo * 5;
       s.push = 10 + combo * 1.5;
-
-      sharks.splice(i, 1);
 
       e.target.value = "";
       updateHUD();
@@ -217,13 +267,15 @@ function updateHUD() {
   document.getElementById("score").innerText = score;
   document.getElementById("health").innerText = health;
   document.getElementById("combo").innerText = combo;
-  document.getElementById("level").innerText = difficulty.toUpperCase();
+  document.getElementById("level").innerText = level;
+  document.getElementById("xp").innerText = xp;
+  document.getElementById("xpNext").innerText = xpToNext;
 }
 
 // ---------- START ----------
-function startGame(level) {
-  difficulty = level;
-  const set = settings(level);
+function startGame(levelChoice) {
+  difficulty = levelChoice;
+  const set = settings(levelChoice);
 
   speed = set.speed;
   health = set.health;
@@ -233,6 +285,11 @@ function startGame(level) {
   particles = [];
   score = 0;
   combo = 0;
+
+  level = 1;
+  xp = 0;
+  xpToNext = 100;
+
   slowTimer = 0;
   spawnAccumulator = 0;
 
@@ -264,12 +321,21 @@ function update() {
   for (let i = sharks.length - 1; i >= 0; i--) {
     let s = sharks[i];
 
+    let moveSpeed = currentSpeed;
+
+    if (s.type === "fast") moveSpeed *= 1.8;
+
     if (s.push > 0) {
       s.x += s.push;
       s.push *= 0.8;
     }
 
-    s.x -= currentSpeed;
+    s.x -= moveSpeed;
+
+    // 🌀 ZIGZAG
+    if (s.type === "zigzag") {
+      s.y += Math.sin(Date.now() * 0.005 + s.x * 0.05) * 2;
+    }
 
     if (s.x < -80) {
       sharks.splice(i, 1);
@@ -293,7 +359,7 @@ function update() {
   });
 }
 
-// ---------- DRAW WORD ----------
+// ---------- DRAW ----------
 function drawWord(s) {
   ctx.font = "bold 14px Arial";
 
@@ -312,7 +378,6 @@ function drawWord(s) {
   );
 }
 
-// ---------- DRAW ----------
 function draw() {
   ctx.fillStyle = "#001018";
   ctx.fillRect(0, 0, 900, 450);
@@ -323,7 +388,7 @@ function draw() {
   });
 
   sharks.forEach(s => {
-    drawSharkBody(s.x, s.y, slowTimer > 0);
+    drawSharkBody(s.x, s.y, s.type, slowTimer > 0);
     drawWord(s);
   });
 }
