@@ -79,7 +79,6 @@
 
 <input id="typebox" placeholder="type shark word..." disabled />
 
-<!-- MENU -->
 <div id="menu">
   <h1>🦈 Choose Difficulty</h1>
   <button class="easy" onclick="startGame('easy')">Easy</button>
@@ -88,7 +87,6 @@
   <button class="extreme" onclick="startGame('extreme')">Extreme</button>
 </div>
 
-<!-- GAME OVER -->
 <div id="gameOver" style="display:none;">
   <h1>💀 Game Over</h1>
   <h2 id="finalScore"></h2>
@@ -99,7 +97,6 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-// ---------- GAME STATE ----------
 let sharks = [];
 let particles = [];
 
@@ -110,22 +107,18 @@ let speed = 2;
 let difficulty = "easy";
 let running = false;
 
-// ---------- WORDS ----------
 const words = [
   "SHARK","OCEAN","WAVE","DEEP","HUNT","BLUE",
   "CORAL","REEF","CURRENT","TIDE","FISH","WATER",
   "BITE","SURGE","AQUA","DEPTH"
 ];
 
-// ---------- SHARK SPRITE (NO EXTERNAL DEPENDENCY) ----------
 function drawSharkBody(x, y) {
-  // body
   ctx.fillStyle = "#00c8ff";
   ctx.beginPath();
   ctx.ellipse(x, y, 35, 18, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // tail
   ctx.beginPath();
   ctx.moveTo(x - 35, y);
   ctx.lineTo(x - 55, y - 10);
@@ -133,14 +126,12 @@ function drawSharkBody(x, y) {
   ctx.closePath();
   ctx.fill();
 
-  // eye
   ctx.fillStyle = "white";
   ctx.beginPath();
   ctx.arc(x + 10, y - 5, 3, 0, Math.PI * 2);
   ctx.fill();
 }
 
-// ---------- SHARK SPAWN ----------
 function spawnShark() {
   sharks.push({
     x: 900,
@@ -150,7 +141,6 @@ function spawnShark() {
   });
 }
 
-// ---------- EXPLOSION ----------
 function explode(x, y) {
   for (let i = 0; i < 10; i++) {
     particles.push({
@@ -162,7 +152,6 @@ function explode(x, y) {
   }
 }
 
-// ---------- DIFFICULTY ----------
 function settings(level) {
   if (level === "easy") return { speed: 2, health: 5 };
   if (level === "medium") return { speed: 3, health: 4 };
@@ -170,18 +159,20 @@ function settings(level) {
   if (level === "extreme") return { speed: 6, health: 2 };
 }
 
-// ---------- INPUT ----------
 document.getElementById("typebox").addEventListener("input", e => {
   let val = e.target.value.toUpperCase();
 
   sharks.forEach(s => {
-    if (s.word.startsWith(val)) s.hit = val;
+    if (s.word.startsWith(val)) {
+      s.hit = val;
+    } else {
+      s.hit = "";
+    }
   });
 
   for (let i = 0; i < sharks.length; i++) {
     if (sharks[i].word === val) {
       explode(sharks[i].x, sharks[i].y);
-
       sharks.splice(i, 1);
       spawnShark();
 
@@ -195,7 +186,6 @@ document.getElementById("typebox").addEventListener("input", e => {
   }
 });
 
-// ---------- HUD ----------
 function updateHUD() {
   document.getElementById("score").innerText = score;
   document.getElementById("health").innerText = health;
@@ -203,7 +193,6 @@ function updateHUD() {
   document.getElementById("level").innerText = difficulty.toUpperCase();
 }
 
-// ---------- START GAME ----------
 function startGame(level) {
   difficulty = level;
   const set = settings(level);
@@ -227,11 +216,9 @@ function startGame(level) {
   updateHUD();
 }
 
-// ---------- UPDATE ----------
 function update() {
   speed += 0.0004;
 
-  // move sharks safely (no splice inside forEach bug)
   for (let i = sharks.length - 1; i >= 0; i--) {
     let s = sharks[i];
     s.x -= speed;
@@ -252,7 +239,6 @@ function update() {
     }
   }
 
-  // particles
   for (let i = particles.length - 1; i >= 0; i--) {
     let p = particles[i];
     p.x += p.vx;
@@ -263,28 +249,36 @@ function update() {
   }
 }
 
-// ---------- DRAW ----------
+function drawWord(s) {
+  const x = s.x - 30;
+  const y = s.y - 30;
+
+  ctx.font = "16px Arial";
+
+  // typed part
+  ctx.fillStyle = "#00ff88";
+  ctx.fillText(s.hit, x, y);
+
+  // remaining part
+  ctx.fillStyle = "white";
+  ctx.fillText(s.word.slice(s.hit.length), x + ctx.measureText(s.hit).width, y);
+}
+
 function draw() {
   ctx.fillStyle = "#001018";
   ctx.fillRect(0, 0, 900, 450);
 
-  // particles
   particles.forEach(p => {
     ctx.fillStyle = "orange";
     ctx.fillRect(p.x, p.y, 3, 3);
   });
 
-  // sharks
   sharks.forEach(s => {
     drawSharkBody(s.x, s.y);
-
-    ctx.fillStyle = s.hit ? "#00ff88" : "white";
-    ctx.font = "16px Arial";
-    ctx.fillText(s.word, s.x - 30, s.y - 30);
+    drawWord(s);
   });
 }
 
-// ---------- LOOP ----------
 function loop() {
   if (!running) return;
   update();
