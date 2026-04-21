@@ -1,98 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Typing Shark - Evolution</title>
-  <style>
-    body {
-      margin: 0;
-      background: #001018;
-      color: white;
-      font-family: Arial;
-      text-align: center;
-      overflow: hidden;
-    }
-
-    canvas {
-      background: linear-gradient(#003049, #001018);
-      display: block;
-      margin: 10px auto;
-      border: 2px solid #00f7ff;
-    }
-
-    input {
-      font-size: 20px;
-      padding: 10px;
-      width: 320px;
-      border-radius: 8px;
-      border: none;
-      outline: none;
-      margin-top: 10px;
-    }
-
-    #menu, #gameOver {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.92);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-
-    button {
-      padding: 10px 20px;
-      margin: 10px;
-      font-size: 18px;
-      cursor: pointer;
-      border: none;
-      border-radius: 6px;
-    }
-
-    .easy { background: #2ecc71; }
-    .medium { background: #f1c40f; }
-    .hard { background: #e67e22; }
-    .extreme { background: #e74c3c; }
-
-    #hud {
-      display: flex;
-      justify-content: center;
-      gap: 30px;
-      font-size: 18px;
-    }
-  </style>
-</head>
-<body>
-
-<h1>🦈 Typing Shark: Evolution</h1>
-
-<div id="hud">
-  <div>Score: <span id="score">0</span></div>
-  <div>Health: <span id="health">0</span></div>
-  <div>Combo: <span id="combo">0</span></div>
-  <div>Level: <span id="level">-</span></div>
-</div>
-
-<canvas id="game" width="900" height="450"></canvas>
-
-<input id="typebox" placeholder="type shark word..." disabled />
-
-<div id="menu">
-  <h1>🦈 Choose Difficulty</h1>
-  <button class="easy" onclick="startGame('easy')">Easy</button>
-  <button class="medium" onclick="startGame('medium')">Medium</button>
-  <button class="hard" onclick="startGame('hard')">Hard</button>
-  <button class="extreme" onclick="startGame('extreme')">Extreme</button>
-</div>
-
-<div id="gameOver" style="display:none;">
-  <h1>💀 Game Over</h1>
-  <h2 id="finalScore"></h2>
-  <button onclick="location.reload()">Restart</button>
-</div>
-
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -107,45 +12,65 @@ let speed = 2;
 let difficulty = "easy";
 let running = false;
 
-// NEW: slow effect timer
 let slowTimer = 0;
 
-const words = [
-  "SHARK","OCEAN","WAVE","DEEP","HUNT","BLUE",
-  "CORAL","REEF","CURRENT","TIDE","FISH","WATER",
-  "BITE","SURGE","AQUA","DEPTH"
+// 🆕 spawn timer
+let spawnTimer = 0;
+let spawnInterval = 240; // ~4 seconds at 60fps
+
+// 🆕 WORD POOLS
+const longWords = [
+  "CURRENT","CORAL","DEPTH","SURGE","OCEANIC","TIDAL",
+  "ABYSS","MARINE","VOYAGE","DRIFTING"
 ];
 
+const shortWords = [
+  "WAVE","FISH","BLUE","DEEP","BITE","AQUA","REEF"
+];
+
+// ---------- SHARK ----------
 function drawSharkBody(x, y, slowed=false) {
   ctx.fillStyle = slowed ? "#66e0ff" : "#00c8ff";
 
   ctx.beginPath();
-  ctx.ellipse(x, y, 35, 18, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y, 40, 20, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.beginPath();
-  ctx.moveTo(x - 35, y);
-  ctx.lineTo(x - 55, y - 10);
-  ctx.lineTo(x - 55, y + 10);
+  ctx.moveTo(x - 40, y);
+  ctx.lineTo(x - 65, y - 12);
+  ctx.lineTo(x - 65, y + 12);
   ctx.closePath();
   ctx.fill();
 
   ctx.fillStyle = "white";
   ctx.beginPath();
-  ctx.arc(x + 10, y - 5, 3, 0, Math.PI * 2);
+  ctx.arc(x + 12, y - 5, 3, 0, Math.PI * 2);
   ctx.fill();
 }
 
+// 🆕 WORD SELECTION BASED ON DIFFICULTY
+function getWord() {
+  if (difficulty === "easy") {
+    return longWords[Math.floor(Math.random() * longWords.length)];
+  } else {
+    let pool = [...shortWords, ...longWords];
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+}
+
+// 🆕 SPAWN
 function spawnShark() {
   sharks.push({
     x: 900,
     y: Math.random() * 380 + 30,
-    word: words[Math.floor(Math.random() * words.length)],
+    word: getWord(),
     hit: "",
-    push: 0 // NEW: backward force
+    push: 0
   });
 }
 
+// ---------- EFFECTS ----------
 function explode(x, y) {
   for (let i = 0; i < 10; i++) {
     particles.push({
@@ -157,11 +82,12 @@ function explode(x, y) {
   }
 }
 
+// ---------- SETTINGS ----------
 function settings(level) {
-  if (level === "easy") return { speed: 2, health: 5 };
-  if (level === "medium") return { speed: 3, health: 4 };
-  if (level === "hard") return { speed: 4, health: 3 };
-  if (level === "extreme") return { speed: 6, health: 2 };
+  if (level === "easy") return { speed: 1.5, health: 5 };
+  if (level === "medium") return { speed: 2.5, health: 4 };
+  if (level === "hard") return { speed: 3.5, health: 3 };
+  if (level === "extreme") return { speed: 5, health: 2 };
 }
 
 // ---------- INPUT ----------
@@ -169,11 +95,7 @@ document.getElementById("typebox").addEventListener("input", e => {
   let val = e.target.value.toUpperCase();
 
   sharks.forEach(s => {
-    if (s.word.startsWith(val)) {
-      s.hit = val;
-    } else {
-      s.hit = "";
-    }
+    s.hit = s.word.startsWith(val) ? val : "";
   });
 
   for (let i = 0; i < sharks.length; i++) {
@@ -182,20 +104,15 @@ document.getElementById("typebox").addEventListener("input", e => {
 
       explode(s.x, s.y);
 
-      // 🎯 COMBO MULTIPLIER
-      let multiplier = 1 + Math.min(combo * 0.2, 3); // capped
+      let multiplier = 1 + Math.min(combo * 0.2, 3);
       score += Math.floor(10 * multiplier);
 
       combo++;
 
-      // ❄️ SLOW EFFECT (scaled by combo)
       slowTimer = 40 + combo * 5;
-
-      // ↩️ PUSH BACK (small backward motion)
       s.push = 10 + combo * 1.5;
 
       sharks.splice(i, 1);
-      spawnShark();
 
       e.target.value = "";
       updateHUD();
@@ -212,6 +129,7 @@ function updateHUD() {
   document.getElementById("level").innerText = difficulty.toUpperCase();
 }
 
+// ---------- START ----------
 function startGame(level) {
   difficulty = level;
   const set = settings(level);
@@ -224,12 +142,11 @@ function startGame(level) {
   score = 0;
   combo = 0;
   slowTimer = 0;
+  spawnTimer = 0;
 
   document.getElementById("menu").style.display = "none";
   document.getElementById("typebox").disabled = false;
   document.getElementById("typebox").focus();
-
-  for (let i = 0; i < 6; i++) spawnShark();
 
   running = true;
   loop();
@@ -238,20 +155,23 @@ function startGame(level) {
 
 // ---------- UPDATE ----------
 function update() {
-  speed += 0.0004;
-
   let currentSpeed = speed;
 
-  // apply slow effect
   if (slowTimer > 0) {
     currentSpeed *= 0.6;
     slowTimer--;
   }
 
+  // 🆕 controlled spawning
+  spawnTimer++;
+  if (spawnTimer >= spawnInterval) {
+    spawnShark();
+    spawnTimer = 0;
+  }
+
   for (let i = sharks.length - 1; i >= 0; i--) {
     let s = sharks[i];
 
-    // apply pushback (smooth decay)
     if (s.push > 0) {
       s.x += s.push;
       s.push *= 0.8;
@@ -261,7 +181,6 @@ function update() {
 
     if (s.x < -80) {
       sharks.splice(i, 1);
-      spawnShark();
 
       health--;
       combo = 0;
@@ -275,28 +194,33 @@ function update() {
     }
   }
 
-  for (let i = particles.length - 1; i >= 0; i--) {
-    let p = particles[i];
+  particles.forEach((p, i) => {
     p.x += p.vx;
     p.y += p.vy;
     p.life--;
-
     if (p.life <= 0) particles.splice(i, 1);
-  }
+  });
 }
 
-// ---------- DRAW WORD ----------
+// ---------- DRAW WORD INSIDE SHARK ----------
 function drawWord(s) {
-  const x = s.x - 30;
-  const y = s.y - 30;
+  ctx.font = "bold 14px Arial";
 
-  ctx.font = "16px Arial";
+  const fullWidth = ctx.measureText(s.word).width;
+  const startX = s.x - fullWidth / 2;
+  const y = s.y + 5;
 
+  // typed
   ctx.fillStyle = "#00ff88";
-  ctx.fillText(s.hit, x, y);
+  ctx.fillText(s.hit, startX, y);
 
+  // remaining
   ctx.fillStyle = "white";
-  ctx.fillText(s.word.slice(s.hit.length), x + ctx.measureText(s.hit).width, y);
+  ctx.fillText(
+    s.word.slice(s.hit.length),
+    startX + ctx.measureText(s.hit).width,
+    y
+  );
 }
 
 // ---------- DRAW ----------
@@ -323,6 +247,3 @@ function loop() {
   requestAnimationFrame(loop);
 }
 </script>
-
-</body>
-</html>
