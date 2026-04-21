@@ -1,156 +1,146 @@
-🦈 Typing Shark: Evolution
+# 🦈 Typing Shark: Evolution
 
-A fast-paced browser typing game where you defend against incoming sharks by typing words before they reach you. Improve your typing speed, build combos, and survive as long as possible across increasing difficulty levels.
+A fast-paced browser typing game where you defend against incoming sharks by typing words before they reach you. Build combos, gain XP, level up, and survive increasingly chaotic waves of enemies.
 
-🎮 Features
+---
 
-🦈 Animated shark enemies (no external assets required)
+## 🎮 Features
 
-⌨️ Real-time typing input detection
+- 🦈 Animated shark enemies (no external assets required)  
+- ⌨️ Real-time typing input detection  
+- 🔥 Combo scoring system for consecutive hits  
+- 💥 Particle explosion effects on successful hits  
+- 🧠 XP & Leveling System (progression-based gameplay)  
 
-🔥 Combo scoring system for consecutive hits
+### 🧬 Shark Types
+- ⚡ **Fast sharks** — move quicker, use shorter words  
+- 🛡 **Tank sharks** — require multiple hits  
+- 🌀 **Zig-zag sharks** — move unpredictably  
 
-💥 Particle explosion effects on successful hits
+---
 
-🎯 Multiple difficulty levels:
+## 🎯 Difficulty Levels
 
-Easy
+- Easy  
+- Medium  
+- Hard  
+- Extreme  
 
-Medium
+Each difficulty changes:
+- Starting speed  
+- Player health  
+- Spawn rate  
 
-Hard
+---
 
-Extreme
+## 🕹️ How to Play
 
-❤️ Health system with game over state
+1. Choose a difficulty  
+2. Sharks move from right to left  
+3. Type the word above each shark  
 
-📈 Progressive difficulty (speed increases over time)
+### ✅ Results
 
-🖥️ Simple, clean UI with HUD (Score, Health, Combo, Level)
+- ✔️ Correct word → shark destroyed 💥  
+- ❌ Miss / too slow → shark escapes  
 
-🚀 How to Run
+### 💀 Game Over
 
-Copy the entire code into a file named:
+- Each escaped shark reduces health  
+- Game ends at **0 health**
 
-index.html
+---
 
-Open the file in any modern web browser (Chrome, Edge, Firefox, etc.)
+## 🧠 Gameplay Mechanics
 
-No installation or dependencies required.
+### 🔤 Word Matching
+- Real-time typing detection  
+- Partial matches are highlighted  
+- Full match instantly destroys a shark  
 
+### 🔥 Combo System
+- Consecutive hits increase combo  
+- Higher combo = higher score multiplier  
+- Missing resets combo  
 
-🕹️ How to Play
+### 🧬 Leveling System
+- Gain XP per kill  
+- Level up after reaching XP threshold  
 
-Choose a difficulty from the menu.
+**Leveling rewards:**
+- Increased game speed  
+- Increased spawn rate  
+- Bonus health (capped)  
 
-Sharks will start moving from right to left.
+---
 
-Type the word displayed above each shark.
+## ⚡ Difficulty Scaling
 
-Press keys in the input box:
+The game becomes harder over time and per level:
+- Faster sharks  
+- More frequent spawns  
+- More complex enemy types  
 
-Correct typing destroys the shark 💥
+---
 
-Incorrect or slow typing lets sharks escape ❌
+## 🚀 How to Run
 
-Each escaped shark reduces your health.
+1. Create a file:
 
-The game ends when your health reaches 0.
+2. Paste the game code inside  
+3. Open it in any modern browser:
 
-🧠 Gameplay Mechanics
+- Chrome  
+- Edge  
+- Firefox  
 
-🔤 Word Matching
+✅ No installation required  
 
-Input is matched in real-time.
+---
 
-Partial matches highlight progress.
+## 🧩 Code Structure
 
-Full match destroys a shark instantly.
+### HTML
+- Canvas for rendering  
+- HUD (Score, Health, Combo, Level, XP)  
+- Menu & Game Over screens  
 
-🔥 Combo System
+### CSS
+- Ocean-themed design  
+- Clean UI layout  
 
-Each successful hit increases combo.
+### JavaScript
+- Game loop (`requestAnimationFrame`)  
+- Shark spawning & movement  
+- Enemy type logic  
+- Typing detection  
+- XP & leveling system  
+- Particle effects  
 
-Higher combo = higher score bonus.
+---
 
-Missing a shark resets combo.
+## 🛠️ Customization Ideas
 
-⚡ Difficulty Scaling
+- 🐉 Boss sharks every 10 levels  
+- 💥 Power-ups (freeze, bomb, slow time)  
+- 🔊 Sound effects & background music  
+- 🌊 Wave-based progression  
+- 🏆 High score system (localStorage)  
+- 📱 Mobile support  
+- 🎨 Themes / skins  
 
-Shark speed increases gradually over time.
+---
 
-Higher difficulty starts with:
+## 📌 Known Limitations
 
-Faster speed
+- No mobile optimization  
+- No pause feature  
+- Fixed canvas size  
+- Limited word pool  
+- No sound  
 
-Lower health
+---
 
-⚙️ Difficulty Settings
+## 📄 License
 
-Level	Speed	Health
-
-Easy	2	5
-
-Medium	3	4
-
-Hard	4	3
-
-Extreme	6	2
-
-🧩 Code Structure
-
-HTML
-
-Game canvas
-
-HUD (Score, Health, Combo, Level)
-
-Menu & Game Over screens
-
-CSS
-
-Clean layout with ocean-themed colors
-
-Styled buttons and overlays
-
-JavaScript
-
-Game state management
-
-Shark spawning and movement
-
-Typing input logic
-
-Collision detection (word match)
-
-Particle effects
-
-Game loop using requestAnimationFrame
-
-🛠️ Customization Ideas
-
-Add more word categories (e.g., programming, animals, etc.)
-
-Introduce boss sharks with longer words
-
-Add sound effects and background music
-
-Implement levels or waves
-
-Track high scores using localStorage
-
-Add mobile support with on-screen keyboard
-
-📌 Known Limitations
-
-No mobile optimization yet
-
-No pause feature
-
-Fixed canvas size
-
-Limited word list
-
-📄 License
-
-This project is free to use and modify for personal or educational purposes.
+Free to use and modify for personal or educational purposes.
