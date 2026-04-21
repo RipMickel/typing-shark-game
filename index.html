@@ -109,19 +109,13 @@ let running = false;
 
 let slowTimer = 0;
 
-// 🆕 spawn system
-let spawnTimer = 0;
-let spawnInterval = 240;
+// 🆕 spawn RATE system (sharks per second)
+let spawnAccumulator = 0;
+let sharksPerSecond = 0;
 
-// 🆕 WORD POOLS
-const longWords = [
-  "CURRENT","CORAL","DEPTH","SURGE","OCEANIC","TIDAL",
-  "ABYSS","MARINE","VOYAGE","DRIFTING"
-];
-
-const shortWords = [
-  "WAVE","FISH","BLUE","DEEP","BITE","AQUA","REEF"
-];
+// WORD POOLS
+const longWords = ["CURRENT","CORAL","DEPTH","SURGE","OCEANIC","TIDAL","ABYSS","MARINE","VOYAGE","DRIFTING"];
+const shortWords = ["WAVE","FISH","BLUE","DEEP","BITE","AQUA","REEF"];
 
 // ---------- SHARK ----------
 function drawSharkBody(x, y, slowed=false) {
@@ -144,14 +138,10 @@ function drawSharkBody(x, y, slowed=false) {
   ctx.fill();
 }
 
-// ---------- WORD SELECTION ----------
+// ---------- WORD ----------
 function getWord() {
-  if (difficulty === "easy") {
-    return longWords[Math.floor(Math.random() * longWords.length)];
-  } else {
-    let pool = [...shortWords, ...longWords];
-    return pool[Math.floor(Math.random() * pool.length)];
-  }
+  if (difficulty === "easy") return longWords[Math.floor(Math.random() * longWords.length)];
+  return [...shortWords, ...longWords][Math.floor(Math.random() * (shortWords.length + longWords.length))];
 }
 
 // ---------- SPAWN ----------
@@ -165,7 +155,7 @@ function spawnShark() {
   });
 }
 
-// ---------- EFFECTS ----------
+// ---------- EFFECT ----------
 function explode(x, y) {
   for (let i = 0; i < 10; i++) {
     particles.push({
@@ -177,29 +167,19 @@ function explode(x, y) {
   }
 }
 
-// ---------- SETTINGS ----------
+// ---------- SETTINGS (RATE BASED) ----------
 function settings(level) {
-  if (level === "easy") {
-    return { speed: 1.5, health: 5, spawnInterval: 600 };
-  }
-  if (level === "medium") {
-    return { speed: 2.5, health: 4, spawnInterval: 240 };
-  }
-  if (level === "hard") {
-    return { speed: 3.5, health: 3, spawnInterval: 180 };
-  }
-  if (level === "extreme") {
-    return { speed: 5, health: 2, spawnInterval: 120 };
-  }
+  if (level === "easy") return { speed: 1.5, health: 5, rate: 8 / 10 };
+  if (level === "medium") return { speed: 2.5, health: 4, rate: 6 / 9 };
+  if (level === "hard") return { speed: 3.5, health: 3, rate: 5 / 8 };
+  if (level === "extreme") return { speed: 5, health: 2, rate: 6 / 6 };
 }
 
 // ---------- INPUT ----------
 document.getElementById("typebox").addEventListener("input", e => {
   let val = e.target.value.toUpperCase();
 
-  sharks.forEach(s => {
-    s.hit = s.word.startsWith(val) ? val : "";
-  });
+  sharks.forEach(s => s.hit = s.word.startsWith(val) ? val : "");
 
   for (let i = 0; i < sharks.length; i++) {
     if (sharks[i].word === val) {
@@ -239,14 +219,14 @@ function startGame(level) {
 
   speed = set.speed;
   health = set.health;
-  spawnInterval = set.spawnInterval;
+  sharksPerSecond = set.rate;
 
   sharks = [];
   particles = [];
   score = 0;
   combo = 0;
   slowTimer = 0;
-  spawnTimer = 0;
+  spawnAccumulator = 0;
 
   document.getElementById("menu").style.display = "none";
   document.getElementById("typebox").disabled = false;
@@ -266,10 +246,12 @@ function update() {
     slowTimer--;
   }
 
-  spawnTimer++;
-  if (spawnTimer >= spawnInterval) {
+  // 🆕 RATE-BASED SPAWNING
+  spawnAccumulator += sharksPerSecond;
+
+  while (spawnAccumulator >= 1) {
     spawnShark();
-    spawnTimer = 0;
+    spawnAccumulator--;
   }
 
   for (let i = sharks.length - 1; i >= 0; i--) {
@@ -284,7 +266,6 @@ function update() {
 
     if (s.x < -80) {
       sharks.splice(i, 1);
-
       health--;
       combo = 0;
       updateHUD();
