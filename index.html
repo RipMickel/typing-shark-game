@@ -66,7 +66,7 @@
 </head>
 <body>
 
-<h1>🦈 Typing Shark: Evolution</h1>
+<h1>🦈 Typer Shark: WayLingaw Developed by: mickel.dev</h1>
 
 <div id="hud">
   <div>Score: <span id="score">0</span></div>
@@ -109,7 +109,7 @@ let running = false;
 
 let slowTimer = 0;
 
-// 🆕 spawn RATE system (sharks per second)
+// 🆕 spawn system (per SECOND rate converted from per MINUTE design)
 let spawnAccumulator = 0;
 let sharksPerSecond = 0;
 
@@ -167,12 +167,20 @@ function explode(x, y) {
   }
 }
 
-// ---------- SETTINGS (RATE BASED) ----------
+// ---------- SETTINGS (PER MINUTE → CONVERTED) ----------
 function settings(level) {
-  if (level === "easy") return { speed: 1.5, health: 5, rate: 8 / 10 };
-  if (level === "medium") return { speed: 2.5, health: 4, rate: 6 / 9 };
-  if (level === "hard") return { speed: 3.5, health: 3, rate: 5 / 8 };
-  if (level === "extreme") return { speed: 5, health: 2, rate: 6 / 6 };
+  if (level === "easy") {
+    return { speed: 1.5, health: 5, rate: 8 / 600 };   // 8 per 10 min
+  }
+  if (level === "medium") {
+    return { speed: 2.5, health: 4, rate: 6 / 540 };   // 6 per 9 min
+  }
+  if (level === "hard") {
+    return { speed: 3.5, health: 3, rate: 5 / 480 };    // 5 per 8 min
+  }
+  if (level === "extreme") {
+    return { speed: 5, health: 2, rate: 6 / 360 };      // 6 per 6 min
+  }
 }
 
 // ---------- INPUT ----------
@@ -246,7 +254,6 @@ function update() {
     slowTimer--;
   }
 
-  // 🆕 RATE-BASED SPAWNING
   spawnAccumulator += sharksPerSecond;
 
   while (spawnAccumulator >= 1) {
