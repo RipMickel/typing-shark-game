@@ -234,7 +234,7 @@ function getWord(type) {
 
 function spawnShark() {
   let type = getSharkType();
-  sharks.push({
+  let shark = {
     x: 900,
     y: Math.random() * 380 + 30,
     baseY: 0,
@@ -244,8 +244,9 @@ function spawnShark() {
     push: 0,
     type: type,
     hp: type === "tank" ? 2 : 1
-  });
-  sharks[sharks.length - 1].baseY = sharks[sharks.length - 1].y;
+  };
+  shark.baseY = shark.y;
+  sharks.push(shark);
 }
 
 function explode(x, y) {
@@ -288,11 +289,13 @@ document.getElementById("typebox").addEventListener("input", e => {
 
       if (s.hp <= 0) {
         explode(s.x, s.y);
+
         let multiplier = 1 + Math.min(combo * 0.2, 3);
         score += Math.floor(10 * multiplier);
         combo++;
         xp += 20 + combo * 5;
         checkLevelUp();
+
         sharks.splice(i, 1);
       } else {
         s.word = getWord("fast");
@@ -300,7 +303,8 @@ document.getElementById("typebox").addEventListener("input", e => {
       }
 
       slowTimer = 40 + combo * 5;
-      s.push = 10 + combo * 1.5;
+
+      if (s) s.push = 10 + combo * 1.5;
 
       e.target.value = "";
       updateHUD();
@@ -363,6 +367,8 @@ function update() {
 
   spawnAccumulator += sharksPerSecond;
 
+  if (spawnAccumulator > 5) spawnAccumulator = 5;
+
   while (spawnAccumulator >= 1) {
     spawnShark();
     spawnAccumulator--;
@@ -400,12 +406,13 @@ function update() {
     }
   }
 
-  particles.forEach((p, i) => {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    let p = particles[i];
     p.x += p.vx;
     p.y += p.vy;
     p.life--;
     if (p.life <= 0) particles.splice(i, 1);
-  });
+  }
 }
 
 function drawWord(s) {
