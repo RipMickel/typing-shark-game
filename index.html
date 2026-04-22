@@ -10,6 +10,11 @@
       font-family: Arial;
       text-align: center;
       overflow: hidden;
+      display: flex;
+    }
+
+    #gameContainer {
+      flex: 1;
     }
 
     canvas {
@@ -63,10 +68,31 @@
       font-size: 18px;
       flex-wrap: wrap;
     }
+
+    /* SCOREBOARD */
+    #scoreboard {
+      width: 250px;
+      background: #000c12;
+      border-left: 2px solid #00f7ff;
+      padding: 10px;
+      overflow-y: auto;
+    }
+
+    #scoreboard h2 {
+      margin-top: 0;
+    }
+
+    .score-entry {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid #033;
+    }
   </style>
 </head>
 <body>
 
+<div id="gameContainer">
 <h1>🦈 Typer Shark: WayLingaw Developed by: mickel.dev</h1>
 
 <div id="hud">
@@ -80,9 +106,19 @@
 <canvas id="game" width="900" height="450"></canvas>
 
 <input id="typebox" placeholder="type shark word..." disabled />
+</div>
 
+<!-- SCOREBOARD UI -->
+<div id="scoreboard">
+  <h2>🏆 Scoreboard</h2>
+  <div id="scoreList"></div>
+</div>
+
+<!-- MENU WITH USERNAME -->
 <div id="menu">
-  <h1>🦈 Choose Difficulty</h1>
+  <h1>🦈 Enter Username</h1>
+  <input id="username" placeholder="Enter your name" />
+  <h2>Choose Difficulty</h2>
   <button class="easy" onclick="startGame('easy')">Easy</button>
   <button class="medium" onclick="startGame('medium')">Medium</button>
   <button class="hard" onclick="startGame('hard')">Hard</button>
@@ -117,34 +153,52 @@ let slowTimer = 0;
 let spawnAccumulator = 0;
 let sharksPerSecond = 0;
 
+let username = "";
+
+/* SCORE STORAGE */
+let scoreboard = JSON.parse(localStorage.getItem("scoreboard") || "[]");
+
+function saveScore() {
+  scoreboard.push({ name: username, score: score });
+  scoreboard.sort((a, b) => b.score - a.score);
+  scoreboard = scoreboard.slice(0, 10);
+  localStorage.setItem("scoreboard", JSON.stringify(scoreboard));
+  renderScoreboard();
+}
+
+function renderScoreboard() {
+  const list = document.getElementById("scoreList");
+  list.innerHTML = "";
+  scoreboard.forEach(s => {
+    const div = document.createElement("div");
+    div.className = "score-entry";
+    div.innerHTML = `<span>${s.name}</span><span>${s.score}</span>`;
+    list.appendChild(div);
+  });
+}
+
+renderScoreboard();
+
 const longWords = ["CURRENT","CORAL","DEPTH","SURGE","OCEANIC","TIDAL","ABYSS","MARINE","VOYAGE","DRIFTING"];
 const shortWords = ["WAVE","FISH","BLUE","DEEP","BITE","AQUA","REEF"];
 
-// ---------- SHARK TYPES ----------
 function getSharkType() {
   if (level < 3) return "normal";
-
   let r = Math.random();
-
   if (level >= 6 && r < 0.2) return "tank";
   if (level >= 4 && r < 0.4) return "zigzag";
   if (r < 0.7) return "fast";
-
   return "normal";
 }
 
-// ---------- DRAW ----------
 function drawSharkBody(x, y, type, slowed=false) {
   let color = "#00c8ff";
-
   if (type === "fast") color = "#00ff88";
   if (type === "tank") color = "#ffcc00";
   if (type === "zigzag") color = "#ff66ff";
-
   if (slowed) color = "#66e0ff";
 
   ctx.fillStyle = color;
-
   ctx.beginPath();
   ctx.ellipse(x, y, 40, 20, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -162,17 +216,14 @@ function drawSharkBody(x, y, type, slowed=false) {
   ctx.fill();
 }
 
-// ---------- WORD ----------
 function getWord(type) {
   if (type === "fast") return shortWords[Math.floor(Math.random() * shortWords.length)];
   if (difficulty === "easy") return longWords[Math.floor(Math.random() * longWords.length)];
   return [...shortWords, ...longWords][Math.floor(Math.random() * (shortWords.length + longWords.length))];
 }
 
-// ---------- SPAWN ----------
 function spawnShark() {
   let type = getSharkType();
-
   sharks.push({
     x: 900,
     y: Math.random() * 380 + 30,
@@ -184,11 +235,9 @@ function spawnShark() {
     type: type,
     hp: type === "tank" ? 2 : 1
   });
-
   sharks[sharks.length - 1].baseY = sharks[sharks.length - 1].y;
 }
 
-// ---------- EFFECT ----------
 function explode(x, y) {
   for (let i = 0; i < 10; i++) {
     particles.push({
@@ -200,54 +249,42 @@ function explode(x, y) {
   }
 }
 
-// ---------- SETTINGS ----------
 function settings(level) {
-  if (level === "easy") return { speed: 1.2, health: 5, rate: 3 / 900 };
+  if (level === "easy") return { speed: 1.1, health: 5, rate: 3 / 850 };
   if (level === "medium") return { speed: 2.5, health: 4, rate: 6 / 800 };
   if (level === "hard") return { speed: 3.5, health: 3, rate: 4 / 700 };
   if (level === "extreme") return { speed: 5, health: 2, rate: 3 / 550 };
 }
 
-// ---------- LEVEL UP ----------
 function checkLevelUp() {
   if (xp >= xpToNext) {
     xp -= xpToNext;
     level++;
-
     speed += 0.3;
     sharksPerSecond += 0.002;
-
     health = Math.min(health + 1, 10);
     xpToNext = Math.floor(xpToNext * 1.25);
   }
 }
 
-// ---------- INPUT ----------
 document.getElementById("typebox").addEventListener("input", e => {
   let val = e.target.value.toUpperCase();
-
   sharks.forEach(s => s.hit = s.word.startsWith(val) ? val : "");
 
   for (let i = 0; i < sharks.length; i++) {
     if (sharks[i].word === val) {
       let s = sharks[i];
-
       s.hp--;
 
       if (s.hp <= 0) {
         explode(s.x, s.y);
-
         let multiplier = 1 + Math.min(combo * 0.2, 3);
         score += Math.floor(10 * multiplier);
-
         combo++;
         xp += 20 + combo * 5;
-
         checkLevelUp();
-
         sharks.splice(i, 1);
       } else {
-        // Tank hit feedback
         s.word = getWord("fast");
         s.hit = "";
       }
@@ -262,7 +299,6 @@ document.getElementById("typebox").addEventListener("input", e => {
   }
 });
 
-// ---------- HUD ----------
 function updateHUD() {
   document.getElementById("score").innerText = score;
   document.getElementById("health").innerText = health;
@@ -272,8 +308,13 @@ function updateHUD() {
   document.getElementById("xpNext").innerText = xpToNext;
 }
 
-// ---------- START ----------
 function startGame(levelChoice) {
+  username = document.getElementById("username").value.trim();
+  if (!username) {
+    alert("Please enter a username!");
+    return;
+  }
+
   difficulty = levelChoice;
   const set = settings(levelChoice);
 
@@ -302,7 +343,6 @@ function startGame(levelChoice) {
   updateHUD();
 }
 
-// ---------- UPDATE ----------
 function update() {
   let currentSpeed = speed;
 
@@ -320,7 +360,6 @@ function update() {
 
   for (let i = sharks.length - 1; i >= 0; i--) {
     let s = sharks[i];
-
     let moveSpeed = currentSpeed;
 
     if (s.type === "fast") moveSpeed *= 1.8;
@@ -332,7 +371,6 @@ function update() {
 
     s.x -= moveSpeed;
 
-    // 🌀 ZIGZAG
     if (s.type === "zigzag") {
       s.y += Math.sin(Date.now() * 0.005 + s.x * 0.05) * 2;
     }
@@ -345,6 +383,7 @@ function update() {
 
       if (health <= 0) {
         running = false;
+        saveScore(); // SAVE HERE
         document.getElementById("finalScore").innerText = "Score: " + score;
         document.getElementById("gameOver").style.display = "flex";
       }
@@ -359,7 +398,6 @@ function update() {
   });
 }
 
-// ---------- DRAW ----------
 function drawWord(s) {
   ctx.font = "bold 14px Arial";
 
@@ -393,7 +431,6 @@ function draw() {
   });
 }
 
-// ---------- LOOP ----------
 function loop() {
   if (!running) return;
   update();
