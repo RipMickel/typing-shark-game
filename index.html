@@ -86,6 +86,7 @@
       justify-content: space-between;
       padding: 4px 0;
       border-bottom: 1px solid #033;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -100,6 +101,9 @@
   <div>Combo: <span id="combo">0</span></div>
   <div>Level: <span id="level">1</span></div>
   <div>XP: <span id="xp">0</span>/<span id="xpNext">100</span></div>
+
+  <!-- NEW -->
+  <div>WPM: <span id="wpm">0</span></div>
 </div>
 
 <canvas id="game" width="900" height="450"></canvas>
@@ -152,6 +156,11 @@ let sharksPerSecond = 0;
 
 let username = "";
 
+/* NEW TRACKING */
+let startTime = 0;
+let wordsTyped = 0;
+let fastestWPS = 0;
+
 /* SCORE STORAGE */
 let scoreboard = JSON.parse(localStorage.getItem("scoreboard") || "[]");
 
@@ -161,9 +170,10 @@ function saveScore() {
   if (existing) {
     if (score > existing.score) {
       existing.score = score;
+      existing.wps = fastestWPS;
     }
   } else {
-    scoreboard.push({ name: username, score: score });
+    scoreboard.push({ name: username, score: score, wps: fastestWPS });
   }
 
   scoreboard.sort((a, b) => b.score - a.score);
@@ -179,13 +189,14 @@ function renderScoreboard() {
   scoreboard.forEach(s => {
     const div = document.createElement("div");
     div.className = "score-entry";
-    div.innerHTML = `<span>${s.name}</span><span>${s.score}</span>`;
+    div.innerHTML = `<span>${s.name}</span><span>${s.score} | ⚡${s.wps || 0}</span>`;
     list.appendChild(div);
   });
 }
 
 renderScoreboard();
 
+/* WORD LISTS */
 const longWords = ["CODING","SERVER","CLIENT","BINARY","PYTHON","SCRIPT","DEBUGS","SYSTEM","ROUTER","MEMORY",
  "KERNEL","DRIVER","SOCKET","PACKET","BUFFER","THREAD","OBJECT","METHOD","STRUCT","POINTER",
  "DOMAIN","SEARCH","OUTPUT","INPUTS","LOGICS","MODEMS","SWITCH","SIGNAL","DEVICE","ACCESS"]
@@ -289,6 +300,13 @@ document.getElementById("typebox").addEventListener("input", e => {
 
       if (s.hp <= 0) {
         explode(s.x, s.y);
+
+        /* NEW tracking */
+        wordsTyped++;
+        let elapsed = (Date.now() - startTime) / 1000;
+        let wps = wordsTyped / elapsed;
+        if (wps > fastestWPS) fastestWPS = wps;
+
         let multiplier = 1 + Math.min(combo * 0.2, 3);
         score += Math.floor(10 * multiplier);
         combo++;
@@ -317,6 +335,11 @@ function updateHUD() {
   document.getElementById("level").innerText = level;
   document.getElementById("xp").innerText = xp;
   document.getElementById("xpNext").innerText = xpToNext;
+
+  /* NEW WPM */
+  let elapsedMin = (Date.now() - startTime) / 60000;
+  let wpm = elapsedMin > 0 ? Math.round(wordsTyped / elapsedMin) : 0;
+  document.getElementById("wpm").innerText = wpm;
 }
 
 function startGame(levelChoice) {
@@ -345,6 +368,11 @@ function startGame(levelChoice) {
   slowTimer = 0;
   spawnAccumulator = 0;
 
+  /* NEW reset */
+  startTime = Date.now();
+  wordsTyped = 0;
+  fastestWPS = 0;
+
   document.getElementById("menu").style.display = "none";
   document.getElementById("typebox").disabled = false;
   document.getElementById("typebox").focus();
@@ -354,6 +382,7 @@ function startGame(levelChoice) {
   updateHUD();
 }
 
+/* rest unchanged */
 function update() {
   let currentSpeed = speed;
 
@@ -411,7 +440,6 @@ function update() {
 
 function drawWord(s) {
   ctx.font = "bold 14px Arial";
-
   const fullWidth = ctx.measureText(s.word).width;
   const startX = s.x - fullWidth / 2;
   const y = s.y + 5;
