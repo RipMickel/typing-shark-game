@@ -186,10 +186,10 @@ function renderScoreboard() {
 
 renderScoreboard();
 
-const longWords = ["CODING","SERVER","CLIENT","BINARY","PYTHON","SCRIPT","DEBUGS","SYSTEM","ROUTER","MEMORY","DRIVER","SOCKET","PACKET","BUFFER","THREAD","OBJECT","METHOD",
- "DOMAIN","SEARCH","OUTPUT","INPUTS","LOGICS","MODEMS","SWITCH","SIGNAL","DEVICE","ACCESS"]
+const longWords = ["CODING","SERVER","CLIENT","BINARY","PYTHON","SCRIPT","SYSTEM","ROUTER","MEMORY","DRIVER","SOCKET","PACKET","BUFFER","THREAD","OBJECT","METHOD",
+ "DOMAIN","SEARCH","OUTPUT","INPUTS","LOGIC","MODEM","SWITCH","SIGNAL","DEVICE","ACCESS"]
 const shortWords = ["APP","WEB","CPU","RAM","ROM","LAN","WAN","API","GUI","DBMS","CODE","DATA","NODE","PORT",
- "IPV4","IPV6","HTML","CSS","JS","SQL","HTTP","HTTPS","FTP","SSH","DNS","JSON","XML",
+ "IPV4","IPV6","HTML","CSS","JS","SQL","HTTP","FTP","SSH","DNS","JSON","XML",
  "AUTH","USER","PASS","HOST","PING","BYTE","KERN","PROC","EXEC","TASK"]
 
 function getSharkType() {
@@ -260,7 +260,7 @@ function explode(x, y) {
 }
 
 function settings(level) {
-  if (level === "easy") return { speed: 0.5, health: 5, rate: 4 / 900 };
+  if (level === "easy") return { speed: 1.5, health: 5, rate: 3 / 900 };
   if (level === "medium") return { speed: 2.5, health: 4, rate: 6 / 800 };
   if (level === "hard") return { speed: 3.5, health: 3, rate: 4 / 700 };
   if (level === "extreme") return { speed: 5, health: 2, rate: 3 / 550 };
