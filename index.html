@@ -196,12 +196,14 @@ function renderScoreboard() {
 
 renderScoreboard();
 
+const longWords = ["CODING","SERVER","CLIENT","BINARY","PYTHON","SCRIPT","SYSTEM","ROUTER","MEMORY","DRIVER","SOCKET","PACKET","BUFFER","THREAD","OBJECT","METHOD",
+ "DOMAIN","SEARCH","OUTPUT","INPUTS","LOGIC","MODEM","SWITCH","SIGNAL","DEVICE","ACCESS"]
 /* WORD LISTS */
 const longWords = ["CODING","SERVER","CLIENT","BINARY","PYTHON","SCRIPT","DEBUGS","SYSTEM","ROUTER","MEMORY",
  "KERNEL","DRIVER","SOCKET","PACKET","BUFFER","THREAD","OBJECT","METHOD","STRUCT","POINTER",
  "DOMAIN","SEARCH","OUTPUT","INPUTS","LOGICS","MODEMS","SWITCH","SIGNAL","DEVICE","ACCESS"]
 const shortWords = ["APP","WEB","CPU","RAM","ROM","LAN","WAN","API","GUI","DBMS","CODE","DATA","NODE","PORT",
- "IPV4","IPV6","HTML","CSS","JS","SQL","HTTP","HTTPS","FTP","SSH","DNS","JSON","XML",
+ "IPV4","IPV6","HTML","CSS","JS","SQL","HTTP","FTP","SSH","DNS","JSON","XML",
  "AUTH","USER","PASS","HOST","PING","BYTE","KERN","PROC","EXEC","TASK"]
 
 function getSharkType() {
@@ -246,7 +248,7 @@ function getWord(type) {
 
 function spawnShark() {
   let type = getSharkType();
-  sharks.push({
+  let shark = {
     x: 900,
     y: Math.random() * 380 + 30,
     baseY: 0,
@@ -256,8 +258,9 @@ function spawnShark() {
     push: 0,
     type: type,
     hp: type === "tank" ? 2 : 1
-  });
-  sharks[sharks.length - 1].baseY = sharks[sharks.length - 1].y;
+  };
+  shark.baseY = shark.y;
+  sharks.push(shark);
 }
 
 function explode(x, y) {
@@ -272,7 +275,7 @@ function explode(x, y) {
 }
 
 function settings(level) {
-  if (level === "easy") return { speed: 0.5, health: 5, rate: 4 / 900 };
+  if (level === "easy") return { speed: 1.5, health: 5, rate: 3 / 900 };
   if (level === "medium") return { speed: 2.5, health: 4, rate: 6 / 800 };
   if (level === "hard") return { speed: 3.5, health: 3, rate: 4 / 700 };
   if (level === "extreme") return { speed: 5, health: 2, rate: 3 / 550 };
@@ -312,6 +315,7 @@ document.getElementById("typebox").addEventListener("input", e => {
         combo++;
         xp += 20 + combo * 5;
         checkLevelUp();
+
         sharks.splice(i, 1);
       } else {
         s.word = getWord("fast");
@@ -319,7 +323,8 @@ document.getElementById("typebox").addEventListener("input", e => {
       }
 
       slowTimer = 40 + combo * 5;
-      s.push = 10 + combo * 1.5;
+
+      if (s) s.push = 10 + combo * 1.5;
 
       e.target.value = "";
       updateHUD();
@@ -393,6 +398,8 @@ function update() {
 
   spawnAccumulator += sharksPerSecond;
 
+  if (spawnAccumulator > 5) spawnAccumulator = 5;
+
   while (spawnAccumulator >= 1) {
     spawnShark();
     spawnAccumulator--;
@@ -430,12 +437,13 @@ function update() {
     }
   }
 
-  particles.forEach((p, i) => {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    let p = particles[i];
     p.x += p.vx;
     p.y += p.vy;
     p.life--;
     if (p.life <= 0) particles.splice(i, 1);
-  });
+  }
 }
 
 function drawWord(s) {
