@@ -194,10 +194,10 @@ const shortWords = ["APP","WEB","CPU","RAM","ROM","LAN","WAN","API","GUI","DBMS"
  "AUTH","USER","PASS","HOST","PING","BYTE","KERN","PROC","EXEC","TASK"]
 
 function getSharkType() {
-  if (level < 3) return "normal";
+  if (level < 4) return "normal";
   let r = Math.random();
   if (level >= 6 && r < 0.2) return "tank";
-  if (level >= 4 && r < 0.4) return "zigzag";
+  if (level >= 5 && r < 0.4) return "zigzag";
   if (r < 0.7) return "fast";
   return "normal";
 }
