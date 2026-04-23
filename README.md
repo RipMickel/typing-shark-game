@@ -109,15 +109,7 @@ typing-shark/
 
 ---
 
-## ⚙️ Customization Ideas
 
-* Add sound effects 🔊
-* Add boss sharks 🐋
-* Online leaderboard 🌐
-* Mobile support 📱
-* Power-ups (freeze, bomb, shield) 💥
-
----
 
 ## 👨‍💻 Developer
 
