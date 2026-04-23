@@ -34,11 +34,12 @@
       margin-top: 10px;
     }
 
+    /* 🔥 FIXED MENU WIDTH */
     #menu, #gameOver {
       position: absolute;
       top: 0;
       left: 0;
-      width: 100%;
+      width: calc(100% - 270px); /* leave space for scoreboard */
       height: 100%;
       background: rgba(0,0,0,0.92);
       display: flex;
@@ -75,6 +76,7 @@
       border-left: 2px solid #00f7ff;
       padding: 10px;
       overflow-y: auto;
+      height: 100vh;
     }
 
     #scoreboard h2 {
@@ -165,7 +167,7 @@ function loadScoreboard() {
 }
 
 function saveScore() {
-  loadScoreboard(); // ensure latest
+  loadScoreboard();
 
   let existing = scoreboard.find(
     s => s.name.toLowerCase() === username.toLowerCase()
@@ -197,10 +199,10 @@ function renderScoreboard() {
   });
 }
 
-/* LOAD FIRST */
 loadScoreboard();
 renderScoreboard();
 
+/* --- REST OF YOUR CODE UNCHANGED --- */
 const longWords = ["CODING","SERVER","CLIENT","BINARY","PYTHON","SCRIPT","SYSTEM","ROUTER","MEMORY","DRIVER","SOCKET","PACKET","BUFFER","THREAD","OBJECT","METHOD",
  "DOMAIN","SEARCH","OUTPUT","INPUTS","LOGIC","MODEM","SWITCH","SIGNAL","DEVICE","ACCESS"]
 const shortWords = ["APP","WEB","CPU","RAM","ROM","LAN","WAN","API","GUI","DBMS","CODE","DATA","NODE","PORT",
