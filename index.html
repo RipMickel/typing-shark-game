@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Typing Shark - Developed by: mickel.dev</title>
+  <title>Typing Shark - Evolution</title>
   <style>
     body {
       margin: 0;
@@ -86,7 +86,6 @@
       justify-content: space-between;
       padding: 4px 0;
       border-bottom: 1px solid #033;
-      font-size: 14px;
     }
   </style>
 </head>
@@ -101,9 +100,6 @@
   <div>Combo: <span id="combo">0</span></div>
   <div>Level: <span id="level">1</span></div>
   <div>XP: <span id="xp">0</span>/<span id="xpNext">100</span></div>
-
-  <!-- NEW -->
-  <div>WPM: <span id="wpm">0</span></div>
 </div>
 
 <canvas id="game" width="900" height="450"></canvas>
@@ -156,24 +152,31 @@ let sharksPerSecond = 0;
 
 let username = "";
 
-/* NEW TRACKING */
-let startTime = 0;
-let wordsTyped = 0;
-let fastestWPS = 0;
+/* SCORE STORAGE FIXED */
+let scoreboard = [];
 
-/* SCORE STORAGE */
-let scoreboard = JSON.parse(localStorage.getItem("scoreboard") || "[]");
+function loadScoreboard() {
+  try {
+    const data = JSON.parse(localStorage.getItem("scoreboard"));
+    scoreboard = Array.isArray(data) ? data : [];
+  } catch (e) {
+    scoreboard = [];
+  }
+}
 
 function saveScore() {
-  let existing = scoreboard.find(s => s.name.toLowerCase() === username.toLowerCase());
+  loadScoreboard(); // ensure latest
+
+  let existing = scoreboard.find(
+    s => s.name.toLowerCase() === username.toLowerCase()
+  );
 
   if (existing) {
     if (score > existing.score) {
       existing.score = score;
-      existing.wps = fastestWPS;
     }
   } else {
-    scoreboard.push({ name: username, score: score, wps: fastestWPS });
+    scoreboard.push({ name: username, score: score });
   }
 
   scoreboard.sort((a, b) => b.score - a.score);
@@ -189,19 +192,17 @@ function renderScoreboard() {
   scoreboard.forEach(s => {
     const div = document.createElement("div");
     div.className = "score-entry";
-    div.innerHTML = `<span>${s.name}</span><span>${s.score} | ⚡${s.wps || 0}</span>`;
+    div.innerHTML = `<span>${s.name}</span><span>${s.score}</span>`;
     list.appendChild(div);
   });
 }
 
+/* LOAD FIRST */
+loadScoreboard();
 renderScoreboard();
 
 const longWords = ["CODING","SERVER","CLIENT","BINARY","PYTHON","SCRIPT","SYSTEM","ROUTER","MEMORY","DRIVER","SOCKET","PACKET","BUFFER","THREAD","OBJECT","METHOD",
  "DOMAIN","SEARCH","OUTPUT","INPUTS","LOGIC","MODEM","SWITCH","SIGNAL","DEVICE","ACCESS"]
-/* WORD LISTS */
-const longWords = ["CODING","SERVER","CLIENT","BINARY","PYTHON","SCRIPT","DEBUGS","SYSTEM","ROUTER","MEMORY",
- "KERNEL","DRIVER","SOCKET","PACKET","BUFFER","THREAD","OBJECT","METHOD","STRUCT","POINTER",
- "DOMAIN","SEARCH","OUTPUT","INPUTS","LOGICS","MODEMS","SWITCH","SIGNAL","DEVICE","ACCESS"]
 const shortWords = ["APP","WEB","CPU","RAM","ROM","LAN","WAN","API","GUI","DBMS","CODE","DATA","NODE","PORT",
  "IPV4","IPV6","HTML","CSS","JS","SQL","HTTP","FTP","SSH","DNS","JSON","XML",
  "AUTH","USER","PASS","HOST","PING","BYTE","KERN","PROC","EXEC","TASK"]
@@ -248,7 +249,7 @@ function getWord(type) {
 
 function spawnShark() {
   let type = getSharkType();
-  let shark = {
+  sharks.push({
     x: 900,
     y: Math.random() * 380 + 30,
     baseY: 0,
@@ -258,9 +259,8 @@ function spawnShark() {
     push: 0,
     type: type,
     hp: type === "tank" ? 2 : 1
-  };
-  shark.baseY = shark.y;
-  sharks.push(shark);
+  });
+  sharks[sharks.length - 1].baseY = sharks[sharks.length - 1].y;
 }
 
 function explode(x, y) {
@@ -303,19 +303,11 @@ document.getElementById("typebox").addEventListener("input", e => {
 
       if (s.hp <= 0) {
         explode(s.x, s.y);
-
-        /* NEW tracking */
-        wordsTyped++;
-        let elapsed = (Date.now() - startTime) / 1000;
-        let wps = wordsTyped / elapsed;
-        if (wps > fastestWPS) fastestWPS = wps;
-
         let multiplier = 1 + Math.min(combo * 0.2, 3);
         score += Math.floor(10 * multiplier);
         combo++;
         xp += 20 + combo * 5;
         checkLevelUp();
-
         sharks.splice(i, 1);
       } else {
         s.word = getWord("fast");
@@ -323,8 +315,7 @@ document.getElementById("typebox").addEventListener("input", e => {
       }
 
       slowTimer = 40 + combo * 5;
-
-      if (s) s.push = 10 + combo * 1.5;
+      s.push = 10 + combo * 1.5;
 
       e.target.value = "";
       updateHUD();
@@ -340,18 +331,18 @@ function updateHUD() {
   document.getElementById("level").innerText = level;
   document.getElementById("xp").innerText = xp;
   document.getElementById("xpNext").innerText = xpToNext;
-
-  /* NEW WPM */
-  let elapsedMin = (Date.now() - startTime) / 60000;
-  let wpm = elapsedMin > 0 ? Math.round(wordsTyped / elapsedMin) : 0;
-  document.getElementById("wpm").innerText = wpm;
 }
 
 function startGame(levelChoice) {
   username = document.getElementById("username").value.trim();
+
   if (!username) {
     alert("Please enter a username!");
     return;
+  }
+
+  if (username.length > 15) {
+    username = username.slice(0, 15);
   }
 
   difficulty = levelChoice;
@@ -373,11 +364,6 @@ function startGame(levelChoice) {
   slowTimer = 0;
   spawnAccumulator = 0;
 
-  /* NEW reset */
-  startTime = Date.now();
-  wordsTyped = 0;
-  fastestWPS = 0;
-
   document.getElementById("menu").style.display = "none";
   document.getElementById("typebox").disabled = false;
   document.getElementById("typebox").focus();
@@ -387,7 +373,6 @@ function startGame(levelChoice) {
   updateHUD();
 }
 
-/* rest unchanged */
 function update() {
   let currentSpeed = speed;
 
@@ -397,8 +382,6 @@ function update() {
   }
 
   spawnAccumulator += sharksPerSecond;
-
-  if (spawnAccumulator > 5) spawnAccumulator = 5;
 
   while (spawnAccumulator >= 1) {
     spawnShark();
@@ -437,17 +420,17 @@ function update() {
     }
   }
 
-  for (let i = particles.length - 1; i >= 0; i--) {
-    let p = particles[i];
+  particles.forEach((p, i) => {
     p.x += p.vx;
     p.y += p.vy;
     p.life--;
     if (p.life <= 0) particles.splice(i, 1);
-  }
+  });
 }
 
 function drawWord(s) {
   ctx.font = "bold 14px Arial";
+
   const fullWidth = ctx.measureText(s.word).width;
   const startX = s.x - fullWidth / 2;
   const y = s.y + 5;
